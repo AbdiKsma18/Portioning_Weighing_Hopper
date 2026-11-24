@@ -1,74 +1,35 @@
 # Automated Portioning & Weighing Hopper
 
-Sistem penakaran dan penimbangan material curah otomatis berbasis **Arduino Uno**, modul sensor beban **HX711**, aktuator **Servo** (pengatur katup bukaan *hopper*), **OLED SSD1306** (antarmuka informasi *real-time*), serta **Potensiometer** (pengatur berat target dalam satuan **kilogram (`kg`)**).
+An automated portioning and weighing hopper system built on **Arduino Uno** using a load cell amplifier (**HX711**), a **servo valve**, an **OLED display**, a **potentiometer**, control pushbuttons (`TARE` and `START/STOP`), status LEDs, and a buzzer. Developed and simulated using **PlatformIO** and **Wokwi** in **VS Code**, with all weight parameters standardized in **kilograms (`kg`)**.
 
-Proyek ini dirancang menggunakan **PlatformIO** di **Visual Studio Code** dan diuji melalui simulasi **Wokwi** dengan kontrol pengisian dua tahap (*two-stage filling*) untuk menekan risiko *overshoot* akibat momentum aliran material.
+## Key Features
+- **Two-Stage Filling Control:** Uses `FAST MODE` (100% valve opening) below 80% of the target weight and switches to `SLOW MODE` (reduced valve opening) from 80% up to the target weight to minimize material overshoot.
+- **Clear Mode & Status Feedback:** Displays system states (`READY`, `FAST MODE`, `SLOW MODE`, `COMPLETE`, and `OVERLOAD!`), target weight, current weight, valve percentage, and a progress bar on the OLED screen.
+- **Weight Unit in `kg`:** Aligns weight parameters directly with the Wokwi HX711 simulation slider for smoother testing and demonstration.
+- **Tare & Start/Stop Controls:** Allows zeroing the scale (`TARE`) when idle and toggling filling operation (`START/STOP`).
 
----
+## Hardware & Pin Mapping
+| Component | Pin / Interface | Function |
+| :--- | :--- | :--- |
+| Potentiometer | `A0` | Adjusts target weight in `kg` (when stopped) |
+| TARE Button | `D2` (`INPUT_PULLUP`) | Resets scale baseline to `0.00 kg` when idle |
+| START/STOP Button | `D3` (`INPUT_PULLUP`) | Starts or stops the portioning cycle |
+| HX711 Load Cell Amp | `DT: D4`, `SCK: D5` | Reads weight measurements in `kg` |
+| Green LED | `D6` | Indicates `READY` or `COMPLETE` state |
+| Red LED | `D7` | Indicates active filling (`FAST MODE` / `SLOW MODE`) or `OVERLOAD!` |
+| Buzzer | `D8` | Provides audio feedback for button presses, completion, and alerts |
+| Servo Motor | `D9` | Controls hopper valve opening angle (`0°` closed, `25°` slow, `90°` fast) |
+| SSD1306 OLED (128x64) | `SDA: A4`, `SCL: A5` (`I2C`, `0x3C`) | Displays mode, target weight, actual weight, valve %, and progress bar |
 
-## Fitur Utama
-
-- **Pengaturan Target Berbasis `kg`:** Target berat diatur menggunakan potensiometer dalam satuan kilogram (`kg`) dengan tampilan langsung di layar OLED.
-- **Pengisian Dua Tahap (`FAST MODE` & `SLOW MODE`):**
-  - **`FAST MODE`:** Buka katup penuh (`100%`) saat berat aktual masih jauh di bawah batas ambang ($< 80\%$ dari berat target) untuk mempercepat proses penuangan.
-  - **`SLOW MODE`:** Memperkecil bukaan katup saat berat aktual mendekati target ($\ge 80\%$ dari berat target) agar aliran melambat dan hasil akhir lebih presisi.
-- **Status & Indikator Jelas:** Menampilkan status sistem di OLED (`READY`, `FAST MODE`, `SLOW MODE`, `COMPLETE`, dan `OVERLOAD!`) beserta *progress bar* pengisian, ditambah indikator LED, *buzzer*, serta tombol `TARE` dan `START/STOP`.
-
----
-
-## Perangkat Keras & Komponen
-
-| Komponen | Keterangan / Fungsi |
-| :--- | :--- |
-| **Mikrokontroler** | Arduino Uno |
-| **Sensor Berat** | HX711 + *Load Cell* (diuji menggunakan simulasi Wokwi HX711 dalam satuan `kg`) |
-| **Aktuator Katup** | Motor Servo (mengatur bukaan pintu *hopper*: tutup, lambat, dan cepat) |
-| **Display** | OLED 128x64 (I2C, `SSD1306`) |
-| **Input & Indikator** | Potensiometer (set target `kg`), tombol `TARE`, tombol `START/STOP`, LED indikator, dan *buzzer* |
-
----
-
-## Struktur Proyek
-
+## Project Structure
 ```text
 Portioning_Weighing_Hopper/
-├── include/          # File header tambahan (jika digunakan)
-├── lib/              # Library lokal proyek
+├── include/
+├── lib/
 ├── src/
-│   └── main.cpp      # Logika utama state machine, pembacaan sensor, servo, dan OLED
-├── test/             # Unit test (jika ada)
-├── diagram.json      # Skema rangkaian & konfigurasi komponen simulasi Wokwi
-├── wokwi.toml        # Konfigurasi koneksi binary firmware untuk Wokwi
-├── platformio.ini    # Konfigurasi environment & dependensi library PlatformIO
-└── README.md         # Dokumentasi proyek
-```
-
----
-
-## Cara Menjalankan & Mensimulasikan Proyek
-
-### 1. *Build* Firmware via PlatformIO
-Pastikan proyek terbuka di **Visual Studio Code** pada direktori `Portioning_Weighing_Hopper`, lalu jalankan *build* melalui terminal:
-
-```powershell
-pio run
-```
-
-*(Jika perintah `pio` belum dikenali di path terminal tertentu, jalankan menggunakan executable PlatformIO secara langsung)*:
-
-```powershell
-& "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run
-```
-
-### 2. Menjalankan Simulasi Wokwi
-1. Pastikan proses *build* berhasil hingga menghasilkan berkas *firmware* (`firmware.hex`).
-2. Buka berkas `diagram.json` di VS Code.
-3. Tekan tombol **Start / Play** pada simulator Wokwi.
-4. Atur target berat (`kg`) menggunakan potensiometer saat kondisi `READY`, tekan `TARE` bila perlu, lalu tekan `START/STOP` untuk memulai siklus penimbangan.
-
----
-
-## Catatan Pengembangan
-
-- Seluruh parameter penimbangan dan tampilan antarmuka menggunakan satuan **`kg`** agar selaras dengan kontrol simulasi dan kebutuhan demonstrasi.
-- Penamaan mode pada layar OLED (`READY`, `FAST MODE`, `SLOW MODE`, `COMPLETE`, `OVERLOAD!`) disederhanakan agar mudah dipahami saat pengujian maupun presentasi.
+│   └── main.cpp
+├── test/
+├── .gitignore
+├── diagram.json
+├── platformio.ini
+└── wokwi.toml
